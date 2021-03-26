@@ -359,6 +359,14 @@ class FileStore extends EventEmitter {
                 this.handleDocument(store, document, file, arr, message);
                 break;
             }
+            case 'messageInvoice': {
+                const { photo } = content;
+
+                if (photo) {
+                    this.handlePhoto(store, photo, file, arr, message);
+                }
+                break;
+            }
             case 'messageGame': {
                 const { game } = content;
 
@@ -821,7 +829,9 @@ class FileStore extends EventEmitter {
                 });
 
                 // console.log(`[fs] readFile result file_id=${file.id}`, file, response);
-                this.setBlob(file.id, response.data);
+                if (!this.getBlob(file.id)) {
+                    this.setBlob(file.id, response.data);
+                }
             })(file).then(callback, faultCallback);
 
             return;
@@ -983,10 +993,12 @@ class FileStore extends EventEmitter {
     };
 
     setDataUrl = (id, dataUrl) => {
+        // console.log('[f] setDataUrl', id);
         this.dataUrls.set(id, dataUrl);
     };
 
     deleteDataUrl = id => {
+        // console.log('[f] deleteDataUrl', id);
         this.dataUrls.delete(id);
     };
 

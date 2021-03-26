@@ -172,14 +172,15 @@ window.RLottie = (function () {
         rlPlayer.loop = options.loop || false;
         rlPlayer.playWithoutFocus = options.playWithoutFocus;
         rlPlayer.inViewportFunc = options.inViewportFunc;
+        rlPlayer.queueLength = options.queueLength;
 
         const curDeviceRatio = options.maxDeviceRatio ? Math.min(options.maxDeviceRatio, deviceRatio) : deviceRatio;
 
         rlPlayer.fileId = fileId;
         rlPlayer.reqId = ++reqId;
         rlPlayer.el = el;
-        rlPlayer.width = pic_width * curDeviceRatio;
-        rlPlayer.height = pic_height * curDeviceRatio;
+        rlPlayer.width = Math.trunc(pic_width * curDeviceRatio);
+        rlPlayer.height = Math.trunc(pic_height * curDeviceRatio);
         rlPlayer.imageData = new ImageData(rlPlayer.width, rlPlayer.height);
         rlottie.players[reqId] = rlPlayer;
 
@@ -389,7 +390,7 @@ window.RLottie = (function () {
             !data.frames[frameNo] &&
             (!frameNo || ((reqId + frameNo) % data.cachingModulo))) {
             data.frames[frameNo] = {
-                hash: new Uint8ClampedArray(frame).reduce((a, b) => a + b),
+                // hash: new Uint8ClampedArray(frame).reduce((a, b) => a + b),
                 frame: new Uint8ClampedArray(frame),
             };
         }
@@ -436,23 +437,25 @@ window.RLottie = (function () {
         const data = rlottie.frames.get(dataKey);
         const rlPlayer = rlottie.players[reqId];
 
-        if (rlPlayer) {
-            rlPlayer.fps = fps;
-            rlPlayer.frameCount = frameCount;
-            rlPlayer.frameThen = Date.now();
-            rlPlayer.frameInterval = 1000 / fps;
-            rlPlayer.frameQueue = new FrameQueue(fps / 4);
-            rlPlayer.nextFrameNo = false;
-        }
-
         let frameNo = 0;
         if (data) {
             data.fps = fps;
             data.frameCount = frameCount;
         }
 
-        setupMainLoop();
-        requestFrame(reqId, frameNo, rlPlayer.segmentId);
+        if (rlPlayer) {
+            const queueLength = rlPlayer.queueLength || fps / 4;
+
+            rlPlayer.fps = fps;
+            rlPlayer.frameCount = frameCount;
+            rlPlayer.frameThen = Date.now();
+            rlPlayer.frameInterval = 1000 / fps;
+            rlPlayer.frameQueue = new FrameQueue(queueLength);
+            rlPlayer.nextFrameNo = false;
+
+            setupMainLoop();
+            requestFrame(reqId, frameNo, rlPlayer.segmentId);
+        }
     }
 
     rlottie.init = function(el, options) {
@@ -478,6 +481,25 @@ window.RLottie = (function () {
     }
 
     function unloadAnimation(reqId) {
+        const rlPlayer = rlottie.players[reqId];
+        if (!rlPlayer) return;
+
+        let hasOther = false;
+        const dataKey = getDataKey(reqId);
+        for (let key in rlottie.players) {
+            if (getDataKey(key) === dataKey && String(reqId) !== key) {
+                hasOther = true;
+                break;
+            }
+        }
+
+        if (!hasOther) {
+            const data = rlottie.frames.get(dataKey);
+            if (data && data.frames[0]) {
+                data.frames = { 0: { frame: data.frames[0].frame } };
+            }
+        }
+
         delete rlottie.players[reqId];
 
         setupMainLoop();
@@ -558,6 +580,7 @@ window.RLottie = (function () {
     }
 
     rlottie.playSegments = function (reqId, segments, forceFlag) {
+        // console.log('[rlottie] playSegments', segments);
         const rlPlayer = rlottie.players[reqId];
         if (!rlPlayer) return;
 

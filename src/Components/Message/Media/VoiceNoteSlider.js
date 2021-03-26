@@ -238,6 +238,11 @@ class VoiceNoteSlider extends React.Component {
         });
     };
 
+    handleClick = event => {
+        event.stopPropagation();
+        event.preventDefault();
+    };
+
     render() {
         const { chatId, messageId, audio, waveform, className, style } = this.props;
         const { duration, value, dragging, buffered } = this.state;
@@ -251,7 +256,6 @@ class VoiceNoteSlider extends React.Component {
         //     ranges.push({ start: buffered.start(i), end: buffered.end(i)})
         // }
         //
-        // console.log('[clientUpdate] render', JSON.stringify(ranges));
 
         return (
             <div className={classNames('voice-note-slider', className)} style={style}>
@@ -272,6 +276,7 @@ class VoiceNoteSlider extends React.Component {
                     onChange={this.handleChange}
                     onChangeCommitted={this.handleChangeCommitted}
                     onMouseDown={this.handleMouseDown}
+                    onClick={this.handleClick}
                 />
             </div>
         );

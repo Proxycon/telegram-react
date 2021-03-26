@@ -95,23 +95,16 @@ class Audio extends React.Component {
         const { chatId, messageId, block } = this.props;
         const { source } = update;
 
-        if (isCurrentSource(chatId, messageId, block, source)) {
-            if (!this.state.active) {
-                this.setState({
-                    active: true,
-                    playing: true
-                });
-            }
-        } else if (this.state.active) {
-            this.setState({
-                active: false,
-                playing: false
-            });
-        }
+        const isCurrentAudio = isCurrentSource(chatId, messageId, block, source);
+
+        this.setState({
+            active: isCurrentAudio,
+            playing: isCurrentAudio
+        });
     };
 
     render() {
-        const { chatId, messageId, block, audio, openMedia, title, meta, caption } = this.props;
+        const { chatId, messageId, block, audio, openMedia, title, meta, caption, date } = this.props;
         const { playing, active } = this.state;
         if (!audio) return null;
 
@@ -137,7 +130,7 @@ class Audio extends React.Component {
                             {audioTitle}
                         </a>
                     </div>
-                    <div className='audio-action' style={{ opacity: active ? 0 : 1 }}>{audioSubtitle}</div>
+                    <div className='audio-action' style={{ opacity: active ? 0 : 1 }}><span>{audioSubtitle}</span></div>
                     <VoiceNoteSlider audio className='audio-slider' chatId={chatId} messageId={messageId} block={block} duration={duration} style={{ opacity: active ? 1 : 0 }}/>
                     <AudioAction
                         chatId={chatId}
@@ -147,6 +140,7 @@ class Audio extends React.Component {
                         file={file}
                         meta={caption ? null : meta}
                         streaming={supportsStreaming()}
+                        date={date}
                     />
                 </div>
             </div>
@@ -159,7 +153,8 @@ Audio.propTypes = {
     messageId: PropTypes.number,
     block: PropTypes.object,
     audio: PropTypes.object,
-    openMedia: PropTypes.func
+    openMedia: PropTypes.func,
+    date: PropTypes.string
 };
 
 export default Audio;

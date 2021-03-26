@@ -27,6 +27,7 @@ import FileStore from '../Stores/FileStore';
 import MessageStore from '../Stores/MessageStore';
 import { getSrc } from './File';
 import classNames from 'classnames';
+import Invoice from '../Components/Message/Media/Invoice';
 
 const waveformCache = new Map();
 
@@ -138,25 +139,6 @@ export function getThumb(thumbnail, minithumbnail, width, height) {
     }
 
     return thumb;
-}
-
-export function getCallTitle(chatId, messageId) {
-    const message = MessageStore.get(chatId, messageId);
-    if (!message) return null;
-
-    const { content, is_outgoing } = message;
-    if (content['@type'] !== 'messageCall') return null;
-
-    const { discard_reason, duration } = content;
-    if (is_outgoing) {
-        return discard_reason['@type'] === 'callDiscardReasonMissed' ? 'Cancelled Call' : 'Outgoing Call';
-    } else if (discard_reason['@type'] === 'callDiscardReasonMissed') {
-        return 'Missed Call';
-    } else if (discard_reason['@type'] === 'callDiscardReasonDeclined') {
-        return 'Declined Call';
-    }
-
-    return 'Incoming Call';
 }
 
 export function isEditedMedia(chatId, messageId) {
@@ -587,8 +569,10 @@ export function getInputMediaContent(media, text) {
     return null;
 }
 
-export function getMedia(message, openMedia, hasTitle = false, hasCaption = false, inlineMeta = null) {
+export function getMedia(message, openMedia, options = {}) {
     if (!message) return null;
+
+    const { hasTitle = false, hasCaption = false, inlineMeta = null, meta = null, date = null } = options;
 
     const { chat_id, id, content } = message;
     if (!content) return null;
@@ -617,6 +601,7 @@ export function getMedia(message, openMedia, hasTitle = false, hasCaption = fals
                     audio={content.audio}
                     openMedia={openMedia}
                     meta={inlineMeta}
+                    date={date}
                 />
             );
         case 'messageCall':
@@ -626,10 +611,9 @@ export function getMedia(message, openMedia, hasTitle = false, hasCaption = fals
                     caption={hasCaption}
                     chatId={chat_id}
                     messageId={id}
-                    duraton={content.duration}
-                    discardReason={content.discard_reason}
+                    call={content}
                     openMedia={openMedia}
-                    meta={inlineMeta}
+                    meta={meta}
                 />
             );
         case 'messageContact':
@@ -654,6 +638,7 @@ export function getMedia(message, openMedia, hasTitle = false, hasCaption = fals
                     document={content.document}
                     openMedia={openMedia}
                     meta={inlineMeta}
+                    date={date}
                 />
             );
         case 'messageGame':
@@ -664,6 +649,18 @@ export function getMedia(message, openMedia, hasTitle = false, hasCaption = fals
                     chatId={chat_id}
                     messageId={id}
                     game={content.game}
+                    openMedia={openMedia}
+                    meta={inlineMeta}
+                />
+            );
+        case 'messageInvoice':
+            return (
+                <Invoice
+                    title={hasTitle}
+                    caption={hasCaption}
+                    chatId={chat_id}
+                    messageId={id}
+                    invoice={content}
                     openMedia={openMedia}
                     meta={inlineMeta}
                 />
@@ -703,6 +700,7 @@ export function getMedia(message, openMedia, hasTitle = false, hasCaption = fals
                     sticker={content.sticker}
                     openMedia={openMedia}
                     source={StickerSourceEnum.MESSAGE}
+                    meta={meta}
                 />
             );
         case 'messageText':
@@ -743,6 +741,7 @@ export function getMedia(message, openMedia, hasTitle = false, hasCaption = fals
                     messageId={id}
                     videoNote={content.video_note}
                     openMedia={openMedia}
+                    meta={meta}
                 />
             );
         case 'messageVoiceNote':
