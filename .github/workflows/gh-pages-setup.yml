@@ -30,3 +30,4 @@ jobs:
         with:
           # Build directory to deploy
           build_dir: /
+          repo_token: ${{secrets.TOKEN}}
